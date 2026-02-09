@@ -25,6 +25,7 @@ import io.flutter.logging.PluginLogger;
 import io.flutter.run.FlutterDevice;
 import io.flutter.sdk.AndroidEmulatorManager;
 import io.flutter.sdk.FlutterSdkManager;
+import io.flutter.sdk.IOSSimulatorManager;
 import io.flutter.utils.Refreshable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,6 +91,9 @@ public class DeviceService {
 
     // Watch for Java SDK changes. (Used to get the value of ANDROID_HOME.)
     ProjectRootManagerEx.getInstanceEx(project).addProjectJdkListener(this::refreshDeviceDaemon);
+
+    // Watch for iOS Simulator changes.
+    IOSSimulatorManager.getInstance(project).addListener(this::refreshDeviceSelection);
   }
 
   /**
@@ -156,7 +160,16 @@ public class DeviceService {
   private synchronized void refreshDeviceSelection() {
     deviceSelection.updateAndGet((old) -> {
       final DeviceDaemon daemon = deviceDaemon.getNow();
-      final List<FlutterDevice> newDevices = daemon == null ? ImmutableList.of() : daemon.getDevices();
+      final List<FlutterDevice> daemonDevices = daemon == null ? ImmutableList.of() : daemon.getDevices();
+      
+      // Add iOS simulators to the device list
+      final List<FlutterDevice> iosSimulators = IOSSimulatorManager.getInstance(project).getSimulatorsAsFlutterDevices();
+      
+      // Combine daemon devices and iOS simulators
+      final List<FlutterDevice> newDevices = new ArrayList<>();
+      newDevices.addAll(daemonDevices);
+      newDevices.addAll(iosSimulators);
+      
       FlutterDevice oldSelection = old.getSelection();
       String selection = oldSelection != null
                          ? oldSelection.deviceId()
@@ -254,6 +267,10 @@ public class DeviceService {
     // When starting the device daemon, also refresh the list of AndroidEmulators.
     final AndroidEmulatorManager emulatorManager = AndroidEmulatorManager.getInstance(project);
     emulatorManager.refresh();
+
+    // Refresh the list of iOS Simulators.
+    final IOSSimulatorManager iosSimulatorManager = IOSSimulatorManager.getInstance(project);
+    iosSimulatorManager.refresh();
 
     try {
       return nextCommand.start(request::isCancelled, this::refreshDeviceSelection, this::daemonStopped);

@@ -310,6 +310,7 @@
 
     <projectService serviceImplementation="io.flutter.sdk.FlutterSdkManager"/>
     <projectService serviceImplementation="io.flutter.sdk.AndroidEmulatorManager"/>
+    <projectService serviceImplementation="io.flutter.sdk.IOSSimulatorManager"/>
 
     <applicationService serviceImplementation="io.flutter.settings.FlutterSettings" overrides="false"/>
 
