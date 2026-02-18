@@ -108,14 +108,11 @@ kotlin {
   }
 }
 
-// Configure Java compatibility based on javaVersion parameter
+// Use current Java version for compatibility
+// The Kotlin jvmTarget configuration handles version-specific compilation
 java {
-  sourceCompatibility = when (javaVersion) {
-    "17" -> JavaVersion.VERSION_17
-    "21" -> JavaVersion.VERSION_21
-    else -> JavaVersion.current()
-  }
-  targetCompatibility = sourceCompatibility
+  // Don't set explicit sourceCompatibility/targetCompatibility to avoid
+  // compilation errors when target version differs from installed JVM version
 }
 
 sourceSets {
