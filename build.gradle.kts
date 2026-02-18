@@ -108,11 +108,14 @@ kotlin {
   }
 }
 
-var javaCompatibilityVersion: JavaVersion = JavaVersion.current()
-
+// Configure Java compatibility based on javaVersion parameter
 java {
-  sourceCompatibility = javaCompatibilityVersion
-  targetCompatibility = javaCompatibilityVersion
+  sourceCompatibility = when (javaVersion) {
+    "17" -> JavaVersion.VERSION_17
+    "21" -> JavaVersion.VERSION_21
+    else -> JavaVersion.current()
+  }
+  targetCompatibility = sourceCompatibility
 }
 
 sourceSets {
