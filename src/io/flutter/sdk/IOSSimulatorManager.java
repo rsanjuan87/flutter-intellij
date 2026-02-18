@@ -246,6 +246,10 @@ public class IOSSimulatorManager {
     for (IOSSimulator simulator : cachedSimulators) {
       // Only include available simulators
       if (simulator.isAvailable()) {
+        // Extract iOS version from runtime (e.g., "com.apple.CoreSimulator.SimRuntime.iOS-18-1" -> "iOS 18.1")
+        String osVersion = extractOSVersion(simulator.getRuntime());
+        boolean isBooted = simulator.isBooted();
+        
         final FlutterDevice device = new FlutterDevice(
           simulator.getUdid(),
           simulator.getName(),
@@ -253,13 +257,38 @@ public class IOSSimulatorManager {
           true, // emulator
           "mobile",
           "ios",
-          true // ephemeral
+          true, // ephemeral
+          osVersion,
+          isBooted
         );
         devices.add(device);
       }
     }
     
     return devices;
+  }
+
+  /**
+   * Extracts a readable OS version from the runtime string.
+   * Examples:
+   * - "com.apple.CoreSimulator.SimRuntime.iOS-18-1" -> "iOS 18.1"
+   * - "iOS 17.5" -> "iOS 17.5"
+   */
+  private String extractOSVersion(@Nullable String runtime) {
+    if (runtime == null) {
+      return "iOS";
+    }
+    
+    // Handle format like "com.apple.CoreSimulator.SimRuntime.iOS-18-1"
+    if (runtime.contains("SimRuntime.")) {
+      String version = runtime.substring(runtime.lastIndexOf('.') + 1);
+      version = version.replace("-", " ").replace("_", ".");
+      // Capitalize and format (iOS-18-1 -> iOS 18.1)
+      return version.replaceFirst("(\\w+) (\\d+) (\\d+)", "$1 $2.$3");
+    }
+    
+    // Already in readable format
+    return runtime;
   }
 
   private void fireChangeEvent(final @NotNull List<IOSSimulator> newSimulators, final List<IOSSimulator> oldSimulators) {

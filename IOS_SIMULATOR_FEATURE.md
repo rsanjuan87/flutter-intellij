@@ -71,6 +71,46 @@ open -a Simulator --args -CurrentDeviceUDID <UDID>
 - Xcode installed with iOS simulators
 - IntelliJ IDEA with Flutter plugin
 - Flutter SDK installed
+- **Java 21** (required by IntelliJ 2025.2+)
+
+### Java 21 Setup
+
+The project requires Java 21. Install it using Homebrew:
+
+```bash
+# Install Java 21
+brew install openjdk@21
+
+# Set JAVA_HOME for current session
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+
+# Or add to ~/.zshrc for permanent setup
+echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc
+```
+
+### Build Options
+
+#### Option 1: Quick Build Script (Recommended)
+```bash
+./build-plugin.sh
+```
+
+This script:
+- Checks Java version
+- Cleans previous builds
+- Builds the plugin without problematic verification tasks
+- Shows clear success/failure messages
+
+#### Option 2: Manual Gradle Build
+```bash
+# Build without verification
+./gradlew clean buildPlugin --no-daemon
+
+# Run tests
+./gradlew test --no-daemon
+```
+
+⚠️ **Note:** The `verifyPlugin` task may fail due to unavailable Android Studio versions (2025.3.1.7). This doesn't affect the plugin functionality - skip this task during development.
 
 ### Manual Testing Steps
 
@@ -164,6 +204,59 @@ Once this feature is merged and released:
 1. **macOS Only**: iOS simulators are only available on macOS
 2. **Xcode Required**: Requires Xcode and command-line tools installed
 3. **Refresh Timing**: Simulator list doesn't auto-update when simulators are added/removed in Xcode (requires plugin restart)
+4. **Java 21 Required**: IntelliJ 2025.2+ requires Java 21 for compilation
+
+## 🔧 Troubleshooting
+
+### Build Errors
+
+#### Error: "invalid source release: 21"
+**Problem:** Java version is too old (< 21)
+
+**Solution:**
+```bash
+brew install openjdk@21
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+./gradlew clean buildPlugin
+```
+
+#### Error: "Could not find com.google.android.studio:android-studio:2025.3.1.7"
+**Problem:** verifyPlugin task tries to download unavailable Android Studio version
+
+**Solution:** Skip the verifyPlugin task (already done in CI workflow)
+```bash
+# Use the provided build script
+./build-plugin.sh
+
+# Or manually skip verification
+./gradlew buildPlugin --no-daemon
+```
+
+#### Error: "class file version 65.0" (Dart Plugin)
+**Problem:** Dart plugin 502.0.0 compiled with Java 21, but using older Java
+
+**Solution:** Upgrade to Java 21 (see above)
+
+### Runtime Issues
+
+#### Simulators not appearing in device list
+1. Check if Xcode is installed: `xcode-select -p`
+2. Verify simulators exist: `xcrun simctl list devices`
+3. Check plugin logs in IntelliJ: `Help → Show Log in Finder`
+4. Restart IntelliJ IDEA
+
+#### Simulator fails to launch
+1. Verify UDID is correct: `xcrun simctl list devices`
+2. Try launching manually: `open -a Simulator`
+3. Check system resources (disk space, memory)
+4. Restart the Simulator app
+
+### Development Tips
+
+- Use `./build-plugin.sh` for consistent builds
+- Check Java version before building: `java -version`
+- Monitor GitHub Actions for CI build status
+- Test on both Intel and Apple Silicon Macs if possible
 
 ## 🔮 Future Enhancements
 

@@ -23,15 +23,26 @@ public class FlutterDevice {
   private final @Nullable String myCategory;
   private final @Nullable String myPlatformType;
   private final boolean myEphemeral;
+  private final @Nullable String myOsVersion;
+  private final boolean myBooted;
 
   public FlutterDevice(@NotNull String deviceId, @NotNull String deviceName, @Nullable String platform, boolean emulator) {
-    this(deviceId, deviceName, platform, emulator, null, null, null);
+    this(deviceId, deviceName, platform, emulator, null, null, null, null, false);
   }
 
   public FlutterDevice(
     @NotNull String deviceId, @NotNull String deviceName, @Nullable String platform,
     boolean emulator,
     @Nullable String category, @Nullable String platformType, @Nullable Boolean ephemeral
+  ) {
+    this(deviceId, deviceName, platform, emulator, category, platformType, ephemeral, null, false);
+  }
+
+  public FlutterDevice(
+    @NotNull String deviceId, @NotNull String deviceName, @Nullable String platform,
+    boolean emulator,
+    @Nullable String category, @Nullable String platformType, @Nullable Boolean ephemeral,
+    @Nullable String osVersion, boolean booted
   ) {
     myDeviceId = deviceId;
     myDeviceName = deviceName.replaceAll("_", " ");
@@ -40,6 +51,8 @@ public class FlutterDevice {
     myCategory = category;
     myPlatformType = platformType;
     myEphemeral = ephemeral == null ? true : ephemeral;
+    myOsVersion = osVersion;
+    myBooted = booted;
   }
 
   @NotNull
@@ -81,6 +94,15 @@ public class FlutterDevice {
    */
   public boolean ephemeral() {
     return myEphemeral;
+  }
+
+  @Nullable
+  public String osVersion() {
+    return myOsVersion;
+  }
+
+  public boolean isBooted() {
+    return myBooted;
   }
 
   public boolean isIOS() {

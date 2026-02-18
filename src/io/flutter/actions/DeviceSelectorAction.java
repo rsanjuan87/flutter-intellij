@@ -485,12 +485,25 @@ public class DeviceSelectorAction extends AnAction implements CustomComponentAct
 
     selectedDeviceAction = null;
 
+    // Separate devices into booted and not booted
+    final List<FlutterDevice> bootedDevices = new ArrayList<>();
+    final List<FlutterDevice> availableDevices = new ArrayList<>();
+    
     for (FlutterDevice device : devices) {
       if (device == null) continue;
+      
+      if (device.isBooted()) {
+        bootedDevices.add(device);
+      } else {
+        availableDevices.add(device);
+      }
+    }
 
-      final SelectDeviceAction deviceAction = new SelectDeviceAction(device, devices);
+    // Add booted devices at the top (running devices)
+    for (FlutterDevice device : bootedDevices) {
+      final SelectDeviceAction deviceAction = new SelectDeviceAction(device, devices, false);
       newActions.add(deviceAction);
-      LOG.debug("[" + projectName + "] Device action added for " + device);
+      LOG.debug("[" + projectName + "] Booted device action added for " + device.deviceName());
 
       if (Objects.equals(device, selectedDevice)) {
         selectedDeviceAction = deviceAction;
@@ -499,16 +512,51 @@ public class DeviceSelectorAction extends AnAction implements CustomComponentAct
       }
     }
 
+    // Add "Open" group for available (not booted) devices
+    if (!availableDevices.isEmpty()) {
+      if (!bootedDevices.isEmpty()) {
+        newActions.add(new Separator());
+      }
+      
+      // Group available devices by type (simulator, emulator), then by OS version
+      final DefaultActionGroup openGroup = new DefaultActionGroup("Open", true);
+      
+      // Group simulators (iOS)
+      final List<FlutterDevice> simulators = new ArrayList<>();
+      final List<FlutterDevice> emulators = new ArrayList<>();
+      
+      for (FlutterDevice device : availableDevices) {
+        if (device.isIOS() && device.emulator()) {
+          simulators.add(device);
+        } else if (device.emulator() && !device.isIOS()) {
+          emulators.add(device);
+        }
+      }
+      
+      // Add Simulator group
+      if (!simulators.isEmpty()) {
+        final DefaultActionGroup simulatorGroup = new DefaultActionGroup("Simulator", true);
+        groupDevicesByOSVersion(simulatorGroup, simulators, devices, selectedDevice, presentation, projectName);
+        openGroup.add(simulatorGroup);
+      }
+      
+      // Add Emulator group
+      if (!emulators.isEmpty()) {
+        final DefaultActionGroup emulatorGroup = new DefaultActionGroup("Emulator", true);
+        groupDevicesByOSVersion(emulatorGroup, emulators, devices, selectedDevice, presentation, projectName);
+        openGroup.add(emulatorGroup);
+      }
+      
+      newActions.add(openGroup);
+    }
+
     // Show the 'Open iOS Simulator' action.
     if (SystemInfo.isMac) {
       boolean simulatorOpen = false;
-      for (AnAction action : newActions) {
-        if (action instanceof SelectDeviceAction deviceAction) {
-          final FlutterDevice device = deviceAction.device;
-          if (device.isIOS() && device.emulator()) {
-            simulatorOpen = true;
-            break;
-          }
+      for (FlutterDevice device : bootedDevices) {
+        if (device.isIOS() && device.emulator()) {
+          simulatorOpen = true;
+          break;
         }
       }
       newActions.add(new Separator());
@@ -538,12 +586,81 @@ public class DeviceSelectorAction extends AnAction implements CustomComponentAct
     }
   }
 
+  /**
+   * Groups devices by OS version and adds them to the parent group.
+   */
+  private void groupDevicesByOSVersion(
+    @NotNull DefaultActionGroup parentGroup,
+    @NotNull List<FlutterDevice> devices,
+    @NotNull Collection<FlutterDevice> allDevices,
+    @Nullable FlutterDevice selectedDevice,
+    @NotNull Presentation presentation,
+    @NotNull String projectName
+  ) {
+    // Group devices by OS version
+    final java.util.Map<String, List<FlutterDevice>> devicesByVersion = new java.util.LinkedHashMap<>();
+    
+    for (FlutterDevice device : devices) {
+      final String version = device.osVersion() != null ? device.osVersion() : "Unknown";
+      devicesByVersion.computeIfAbsent(version, k -> new ArrayList<>()).add(device);
+    }
+    
+    // Sort versions in descending order
+    final List<String> sortedVersions = new ArrayList<>(devicesByVersion.keySet());
+    sortedVersions.sort((v1, v2) -> {
+      // Try to extract version numbers for proper sorting
+      try {
+        String num1 = v1.replaceAll("[^0-9.]", "");
+        String num2 = v2.replaceAll("[^0-9.]", "");
+        String[] parts1 = num1.split("\\.");
+        String[] parts2 = num2.split("\\.");
+        
+        for (int i = 0; i < Math.min(parts1.length, parts2.length); i++) {
+          int n1 = Integer.parseInt(parts1[i]);
+          int n2 = Integer.parseInt(parts2[i]);
+          if (n1 != n2) {
+            return Integer.compare(n2, n1); // Descending order
+          }
+        }
+        return Integer.compare(parts2.length, parts1.length);
+      } catch (Exception e) {
+        return v2.compareTo(v1);
+      }
+    });
+    
+    // Create version groups
+    for (String version : sortedVersions) {
+      final List<FlutterDevice> versionDevices = devicesByVersion.get(version);
+      final DefaultActionGroup versionGroup = new DefaultActionGroup(version, true);
+      
+      // Sort devices by name
+      versionDevices.sort((d1, d2) -> d1.deviceName().compareToIgnoreCase(d2.deviceName()));
+      
+      for (FlutterDevice device : versionDevices) {
+        final SelectDeviceAction deviceAction = new SelectDeviceAction(device, allDevices, true);
+        versionGroup.add(deviceAction);
+        LOG.debug("[" + projectName + "] Device action added for " + device.deviceName());
+
+        if (Objects.equals(device, selectedDevice)) {
+          selectedDeviceAction = deviceAction;
+          presentation.setIcon(device.getIcon());
+          presentation.setEnabled(true);
+        }
+      }
+      
+      parentGroup.add(versionGroup);
+    }
+  }
+
   private static class SelectDeviceAction extends AnAction {
     @NotNull private final FlutterDevice device;
+    private final boolean hideId;
 
-    SelectDeviceAction(@NotNull FlutterDevice device, @NotNull Collection<FlutterDevice> devices) {
-      super(device.getUniqueName(devices), null, device.getIcon());
+    SelectDeviceAction(@NotNull FlutterDevice device, @NotNull Collection<FlutterDevice> devices, boolean hideId) {
+      // Show only device name without ID when hideId is true
+      super(hideId ? device.deviceName() : device.getUniqueName(devices), null, device.getIcon());
       this.device = device;
+      this.hideId = hideId;
     }
 
     public @NotNull String presentationName() {
