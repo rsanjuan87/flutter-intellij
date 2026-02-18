@@ -106,13 +106,32 @@ kotlin {
     apiVersion.set(KotlinVersion.KOTLIN_2_1)
     jvmTarget = jvmVersion
   }
+  // This is how you specify the specific JVM requirements, this may be a requirement for the Starter test framework
+//  jvmToolchain {
+//    languageVersion = JavaLanguageVersion.of(21)
+//    @Suppress("UnstableApiUsage")
+//    vendor = JvmVendorSpec.JETBRAINS
+//  }
 }
 
-// Use current Java version for compatibility
-// The Kotlin jvmTarget configuration handles version-specific compilation
+var javaCompatibilityVersion: JavaVersion
+javaCompatibilityVersion = when (javaVersion) {
+  "17" -> {
+    JavaVersion.VERSION_17
+  }
+
+  "21" -> {
+    JavaVersion.VERSION_21 // all later versions of java can build against the earlier versions
+  }
+
+  else -> {
+    throw IllegalArgumentException("javaVersion must be defined in the product matrix as either \"17\" or \"21\", but is not for $ideaVersion")
+  }
+}
+
 java {
-  // Don't set explicit sourceCompatibility/targetCompatibility to avoid
-  // compilation errors when target version differs from installed JVM version
+  sourceCompatibility = javaCompatibilityVersion
+  targetCompatibility = javaCompatibilityVersion
 }
 
 sourceSets {
