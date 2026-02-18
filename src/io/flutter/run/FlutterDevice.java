@@ -179,8 +179,8 @@ public class FlutterDevice {
    */
   public void bringToFront() {
     if (emulator() && isIOS()) {
-      // Bring the iOS simulator to front, or launch it if not running.
-      XcodeUtils.openSimulator(null, "-CurrentDeviceUDID", deviceId());
+      // Bring the iOS simulator to front, or launch it if not running with specific UDID.
+      XcodeUtils.openSimulatorByUDID(null, deviceId());
     }
   }
 

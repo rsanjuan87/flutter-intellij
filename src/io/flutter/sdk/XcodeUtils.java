@@ -69,4 +69,47 @@ public class XcodeUtils {
       return null;
     });
   }
+
+  /**
+   * Open the iOS simulator with a specific device UDID.
+   * <p>
+   * This will launch the Simulator.app and boot the device with the given UDID.
+   * If there's an error opening the simulator, display that to the user via
+   * {@link FlutterMessages#showError(String, String, Project)}.
+   */
+  public static void openSimulatorByUDID(@Nullable Project project, @NotNull String udid) {
+    final List<String> params = new ArrayList<>();
+    params.add("-a");
+    params.add("Simulator");
+    params.add("--args");
+    params.add("-CurrentDeviceUDID");
+    params.add(udid);
+
+    final GeneralCommandLine cmd = new GeneralCommandLine().withExePath("open").withParameters(params);
+
+    SystemUtils.execAndGetOutput(cmd).thenAccept((ProcessOutput output) -> {
+      if (output.getExitCode() != 0) {
+        final StringBuilder textBuffer = new StringBuilder();
+        if (!output.getStdout().isEmpty()) {
+          textBuffer.append(output.getStdout());
+        }
+        if (!output.getStderr().isEmpty()) {
+          if (!textBuffer.isEmpty()) {
+            textBuffer.append("\n");
+          }
+          textBuffer.append(output.getStderr());
+        }
+
+        final String eventText = textBuffer.toString();
+        final String msg = !eventText.isEmpty() ? eventText : "Process error - exit code: (" + output.getExitCode() + ")";
+        FlutterMessages.showError("Error Opening Simulator", msg, project);
+      }
+    }).exceptionally(throwable -> {
+      FlutterMessages.showError(
+        "Error Opening Simulator",
+        FlutterBundle.message("flutter.command.exception.message", throwable.getMessage()),
+        project);
+      return null;
+    });
+  }
 }
