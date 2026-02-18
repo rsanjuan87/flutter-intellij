@@ -13,6 +13,7 @@ import com.intellij.openapi.project.Project;
 import io.flutter.FlutterBundle;
 import io.flutter.FlutterMessages;
 import io.flutter.utils.SystemUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
