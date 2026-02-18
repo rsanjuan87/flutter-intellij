@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-This feature adds support for detecting and selecting iOS Simulators directly from the Flutter IntelliJ plugin's device selector dropdown. Previously, iOS simulators were only accessible through the Flutter daemon, but this implementation adds a direct integration using `xcrun simctl`.
+This feature adds support for detecting and selecting iOS Simulators directly from the Flutter IntelliJ plugin's device selector dropdown with a hierarchical organization structure. Devices are organized by status (running/available), type (simulator/emulator), OS version, and device name for better usability.
 
 ## 🎯 Features Implemented
 
@@ -14,28 +14,70 @@ This feature adds support for detecting and selecting iOS Simulators directly fr
 ### 2. **IOSSimulatorManager Service** (`src/io/flutter/sdk/IOSSimulatorManager.java`)
 - Discovers iOS simulators using `xcrun simctl list devices available --json`
 - Parses JSON output to extract simulator information
+- Extracts readable OS version from runtime strings (e.g., "iOS 18.1")
 - Provides methods to:
   - Refresh simulator list
   - Launch simulators by UDID
-  - Convert simulators to FlutterDevice instances
+  - Convert simulators to FlutterDevice instances with OS version and boot status
 - Notifies listeners when simulator list changes
 - Automatically refreshes when DeviceService starts
 
-### 3. **DeviceService Integration** (`src/io/flutter/run/daemon/DeviceService.java`)
+### 3. **FlutterDevice Enhancement** (`src/io/flutter/run/FlutterDevice.java`)
+- Added `osVersion` field to store OS version (e.g., "iOS 18.1", "Android 15")
+- Added `isBooted` field to track device boot status
+- Updated `bringToFront()` method to launch specific iOS simulator by UDID
+- Uses `open -a Simulator --args -CurrentDeviceUDID <udid>` to launch the correct simulator
+
+### 4. **DeviceSelectorAction Hierarchical Menu** (`src/io/flutter/actions/DeviceSelectorAction.java`)
+- **Reorganized device menu structure:**
+  - **Running Devices** (top level): Shows only booted/active devices without IDs
+  - **Separator**
+  - **"Open" Group**: Contains available non-running devices organized hierarchically:
+    - **Simulator**
+      - **iOS 18.2** (version subgroup)
+        - iPhone 16
+        - iPhone 16 Pro
+      - **iOS 18.1**
+        - iPad Pro 11-inch
+    - **Emulator**
+      - **Android 16.0**
+        - Pixel 8
+      - **Android 15**
+        - Samsung Galaxy S23
+- Devices within version groups are sorted alphabetically by name
+- Version groups are sorted in descending order (newest first)
+- Device IDs are hidden in the hierarchical view, showing only clean device names
+
+### 5. **DeviceService Integration** (`src/io/flutter/run/daemon/DeviceService.java`)
 - Combines Flutter daemon devices with iOS simulators
 - Listens to IOSSimulatorManager changes
 - Refreshes iOS simulators when daemon starts
 - Adds iOS simulators to the device dropdown menu
 
-### 4. **FlutterDevice Enhancement** (`src/io/flutter/run/FlutterDevice.java`)
-- Updated `bringToFront()` method to launch specific iOS simulator by UDID
-- Uses `open -a Simulator --args -CurrentDeviceUDID <udid>` to launch the correct simulator
-
-### 5. **Plugin Configuration** (`resources/META-INF/plugin.xml`)
-- Registered IOSSimulatorManager as a project service
+### 6. **Plugin Configuration** (`resources/META-INF/plugin.xml`)
+- Registered IOSSimulatorManager as a project service  
 - Enables dependency injection throughout the plugin
 
 ## 🔧 Technical Implementation Details
+
+### Menu Organization Algorithm
+```java
+1. Separate devices into:
+   - bootedDevices: Currently running (shown at top)
+   - availableDevices: Not running (grouped under "Open")
+
+2. Group availableDevices by type:
+   - Simulators (iOS devices)
+   - Emulators (Android devices)
+
+3. Within each type, group by OS version:
+   - Extract version from device.osVersion()
+   - Sort versions in descending order
+
+4. Within each version, sort devices alphabetically:
+   - Clean device names without IDs
+   - Case-insensitive sorting
+```
 
 ### Simulator Detection
 ```bash
@@ -43,6 +85,18 @@ xcrun simctl list devices available --json
 ```
 
 This command returns JSON with all available iOS simulators grouped by runtime version.
+
+### OS Version Extraction
+```java
+Runtime format: "com.apple.CoreSimulator.SimRuntime.iOS-18-1"
+Extracted version: "iOS 18.1"
+
+Algorithm:
+1. Find "SimRuntime." substring
+2. Extract version part after it
+3. Replace hyphens with spaces and dots
+4. Format as "iOS X.Y"
+```
 
 ### Simulator Launch
 ```bash
