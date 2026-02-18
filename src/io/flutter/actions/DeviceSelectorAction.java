@@ -673,6 +673,7 @@ public class DeviceSelectorAction extends AnAction implements CustomComponentAct
       final DeviceService service = project == null ? null : DeviceService.getInstance(project);
       if (service != null) {
         service.setSelectedDevice(device);
+        device.bringToFront(project);
       }
     }
 

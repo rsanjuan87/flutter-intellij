@@ -140,7 +140,7 @@ public class LaunchState extends CommandLineState {
       }
     }
 
-    device.bringToFront();
+    device.bringToFront(project);
 
     // Check for and display any analysis errors when we launch an app.
     if (env.getRunProfile() instanceof SdkRunConfig config) {

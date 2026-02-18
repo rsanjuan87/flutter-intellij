@@ -7,6 +7,7 @@ package io.flutter.run;
 
 import icons.FlutterIcons;
 import io.flutter.sdk.XcodeUtils;
+import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -178,9 +179,17 @@ public class FlutterDevice {
    * non-emulator, non-iOS devices.
    */
   public void bringToFront() {
+    bringToFront(null);
+  }
+
+  /**
+   * Bring the window representing this device to the foreground. This is a no-op for
+   * non-emulator, non-iOS devices.
+   */
+  public void bringToFront(@Nullable Project project) {
     if (emulator() && isIOS()) {
       // Bring the iOS simulator to front, or launch it if not running with specific UDID.
-      XcodeUtils.openSimulatorByUDID(null, deviceId());
+      XcodeUtils.openSimulatorByUDID(project, deviceId());
     }
   }
 

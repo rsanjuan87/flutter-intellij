@@ -373,7 +373,7 @@ public class FlutterReloadManager {
       });
 
       final FlutterDevice device = app.device();
-      device.bringToFront();
+      device.bringToFront(app.getProject());
     }
   }
 
