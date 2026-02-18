@@ -5,9 +5,7 @@
  */
 
 import okhttp3.internal.immutableListOf
-import org.gradle.api.JavaVersion
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
@@ -108,33 +106,13 @@ kotlin {
     apiVersion.set(KotlinVersion.KOTLIN_2_1)
     jvmTarget = jvmVersion
   }
-  // Configure JVM toolchain to ensure Gradle uses the correct Java version
-  jvmToolchain {
-    languageVersion = JavaLanguageVersion.of(javaVersion.toInt())
-  }
 }
 
-var javaCompatibilityVersion: JavaVersion
-javaCompatibilityVersion = when (javaVersion) {
-  "17" -> {
-    JavaVersion.VERSION_17
-  }
-
-  "21" -> {
-    JavaVersion.VERSION_21 // all later versions of java can build against the earlier versions
-  }
-
-  else -> {
-    throw IllegalArgumentException("javaVersion must be defined in the product matrix as either \"17\" or \"21\", but is not for $ideaVersion")
-  }
-}
+var javaCompatibilityVersion: JavaVersion = JavaVersion.current()
 
 java {
   sourceCompatibility = javaCompatibilityVersion
   targetCompatibility = javaCompatibilityVersion
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(javaVersion.toInt())
-  }
 }
 
 sourceSets {
