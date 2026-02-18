@@ -5,7 +5,9 @@
  */
 
 import okhttp3.internal.immutableListOf
+import org.gradle.api.JavaVersion
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
