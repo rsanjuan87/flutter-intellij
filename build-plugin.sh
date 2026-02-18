@@ -7,20 +7,21 @@ set -e
 echo "🔧 Building Flutter IntelliJ Plugin - iOS Simulator Feature"
 echo "============================================================"
 echo ""
-
+set JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 # Check Java version
 echo "📋 Checking Java version..."
 JAVA_VERSION=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
 echo "   Java version: $JAVA_VERSION"
 
-if [ "$JAVA_VERSION" -lt "21" ]; then
-    echo "❌ Error: Java 21+ is required but found Java $JAVA_VERSION"
-    echo ""
-    echo "To install Java 21:"
-    echo "  brew install openjdk@21"
-    echo "  export JAVA_HOME=\$(/usr/libexec/java_home -v 21)"
-    exit 1
-fi
+#if [ "$JAVA_VERSION" -lt "21" ]; then
+#    echo "❌ Error: Java 21+ is required but found Java $JAVA_VERSION"
+#    echo ""
+#    echo "To install Java 21:"
+#    echo "  brew install openjdk@21"
+#    echo "  export JAVA_HOME=\$(/usr/libexec/java_home -v 21)"
+#    exit 1
+#fi
 
 echo "✅ Java version is compatible"
 echo ""

@@ -55,5 +55,6 @@ unzip -o "$ZIP_PATH" -d "$PLUGINS_DIR" >/dev/null
 
 echo "Installed plugin to: $TARGET_DIR"
 echo "Please 'Enter' to restart your IDE to apply the changes."
+echo "or Ctrl+C to cancel and keep the IDE running "
 read -r
 pkill studio; sleep 2; open -a "Android Studio"
